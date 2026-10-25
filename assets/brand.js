@@ -62,15 +62,20 @@
     const data = new FormData(form);
     const get = key => String(data.get(key) || '').trim();
     const delivery = [get('country'), get('region'), get('city'), get('town'), get('address'), get('deliveryNotes')].filter(Boolean).join(' · ');
+    const quote = window.JeyCeeCatalog?.quote();
+    const money = window.JeyCeeCatalog?.money;
+    const hasItems = quote && quote.items.length > 0;
     const rows = [
-      ['Solicitud', get('selection')],
-      ['Cantidad solicitada', get('quantity') + ' · Sujeta a disponibilidad'],
+      ['Solicitud', hasItems ? quote.description : get('selection')],
+      ...(hasItems && get('selection') ? [['Comentarios', get('selection')]] : []),
+      ['Cantidad solicitada', (hasItems ? quote.items.reduce((sum, item) => sum + item.quantity, 0) : get('quantity')) + ' · Sujeta a disponibilidad'],
       ['Talla de interés', get('size') || 'Por confirmar'],
       ['Contacto', `${get('name')}\n${get('email')}\n${get('phone')}`],
       ['Entrega', delivery],
       ['Facturación', `${get('invoiceType') === 'business' ? 'Empresa' : 'Persona natural'}\n${get('billingName')}\nDocumento: ${get('taxId') || 'No indicado'}\nDV: ${get('dv') || 'No aplica / no indicado'}\n${get('billingAddress') || 'Misma dirección de entrega'}\n${get('billingEmail')}`],
       ['Preferencia de pago', get('payment') + (get('payment') === 'Yappy' ? ' · 6827-4965' : ' · Condiciones por coordinar')],
-      ['Importe, envío e impuestos', 'Por confirmar por el equipo antes del pago']
+      ...(hasItems ? [['Subtotal', money(quote.subtotalCents)], ['ITBMS (7%)', money(quote.taxCents)], ['Total de prendas', money(quote.totalCents)]] : []),
+      ['Envío e importe final', 'El envío y el importe final se confirman con el equipo antes del pago']
     ];
     const details = document.querySelector('#review-details');
     details.replaceChildren();
